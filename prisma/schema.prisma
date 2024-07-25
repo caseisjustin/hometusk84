@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model File {
+  id             String   @id @default(uuid())
+  url            String
+  mimetype       String
+  size           Int
+  car_id         String
+  created_at     DateTime @default(now())
+  last_edited_at DateTime @updatedAt
+  Car            Car      @relation(fields: [car_id], references: [id])
+}
+
+model User {
+  id                  String        @id @default(uuid())
+  phone               String        @unique
+  full_name           String
+  avatar              String
+  role                Role
+  created_at          DateTime      @default(now())
+  last_edited_at      DateTime      @updatedAt
+  createdCompanies    Company[]     @relation("CompanyOwner")
+  Transactions        Transaction[]
+  createdTransactions Transaction[] @relation("CreatedTransactions")
+  editedTransactions  Transaction[] @relation("EditedTransactions")
+}
+
+model Company {
+  id             String        @id @default(uuid())
+  name           String
+  owner          String        @unique
+  logo           String
+  created_at     DateTime      @default(now())
+  last_edited_at DateTime      @updatedAt
+  Owner          User          @relation("CompanyOwner", fields: [owner], references: [id])
+  Models         Model[]
+  Cars           Car[]
+  Transactions   Transaction[]
+}
+
+model Model {
+  id             String   @id @default(uuid())
+  name           String
+  company_id     String
+  created_at     DateTime @default(now())
+  last_edited_at DateTime @updatedAt
+  Company        Company  @relation(fields: [company_id], references: [id])
+  Cars           Car[]
+}
+
+model Car {
+  id             String        @id @default(uuid())
+  name           String
+  model_id       String
+  company_id     String
+  info           String
+  created_at     DateTime      @default(now())
+  last_edited_at DateTime      @updatedAt
+  Model          Model         @relation(fields: [model_id], references: [id])
+  Company        Company       @relation(fields: [company_id], references: [id])
+  Files          File[]
+  Transactions   Transaction[]
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  company_id     String
+  user_id        String
+  user_data      Json
+  car_id         String
+  car_data       Json
+  price          Float
+  start_date     DateTime
+  end_date       DateTime
+  status         TransactionStatus
+  created_at     DateTime          @default(now())
+  last_edited_at DateTime          @updatedAt
+  created_by     String
+  last_edited_by String
+  Company        Company           @relation(fields: [company_id], references: [id])
+  User           User              @relation(fields: [user_id], references: [id])
+  Car            Car               @relation(fields: [car_id], references: [id])
+  Creator        User              @relation("CreatedTransactions", fields: [created_by], references: [id])
+  Editor         User              @relation("EditedTransactions", fields: [last_edited_by], references: [id])
+}
+
+enum Role {
+  CLIENT
+  OWNER
+  SUPERVISOR
+  ADMIN
+}
+
+enum TransactionStatus {
+  DEBIT
+  CREDIT
+}
